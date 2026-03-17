@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import logging
+import os
 
 from uuid import uuid4
 from telegram import Update, constants, BotCommand, BotCommandScopeAllGroupChats
@@ -137,6 +138,49 @@ class AITelegramBot:
                 text=f"Error: {e}",
             )
 
+    async def audio(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await self._is_allowed(update):
+            return
+
+        if not self.ai.supports_transcription():
+            await update.effective_message.reply_text(
+                message_thread_id=_thread_id(update),
+                text="Audio transcription is not supported with this provider.",
+            )
+            return
+
+        chat_id = update.effective_chat.id
+        attachment = update.message.effective_attachment
+        # Voice messages are a single object, audio files may vary
+        file_id = attachment.file_id if hasattr(attachment, 'file_id') else attachment[-1].file_id
+
+        async def _execute():
+            filename = None
+            try:
+                media_file = await context.bot.get_file(file_id)
+                filename = f"/tmp/audio_{file_id}"
+                await media_file.download_to_drive(filename)
+
+                logging.info(f'Transcribing audio from {update.message.from_user.name} (id: {update.message.from_user.id})')
+                transcript = await self.ai.transcribe(filename)
+
+                # Send transcript and get AI response
+                response_text = f"_Transcript:_\n\"{transcript}\"\n\n_Answer:_\n"
+                stream = self.ai.get_chat_response(chat_id=chat_id, query=transcript)
+                await self._stream_to_chat(update, context, chat_id, stream, prefix=response_text)
+
+            except Exception as e:
+                logging.exception(e)
+                await update.effective_message.reply_text(
+                    message_thread_id=_thread_id(update),
+                    text=f"Failed to transcribe audio: {e}",
+                )
+            finally:
+                if filename and os.path.exists(filename):
+                    os.remove(filename)
+
+        await _with_typing(update, context, _execute)
+
     async def unsupported(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
         if not await self._is_allowed(update):
             return
@@ -224,7 +268,7 @@ class AITelegramBot:
 
     # -- Streaming helper --
 
-    async def _stream_to_chat(self, update: Update, context, chat_id: int, stream):
+    async def _stream_to_chat(self, update: Update, context, chat_id: int, stream, prefix: str = ''):
         """Stream AI response to a Telegram chat, editing message as content arrives."""
         i = 0
         prev = ''
@@ -236,9 +280,10 @@ class AITelegramBot:
             if not content.strip():
                 continue
 
-            chunks = _split_chunks(content)
+            display = prefix + content if prefix else content
+            chunks = _split_chunks(display)
             if len(chunks) > 1:
-                content = chunks[-1]
+                display = chunks[-1]
                 if stream_chunk != len(chunks) - 1:
                     stream_chunk += 1
                     try:
@@ -248,13 +293,13 @@ class AITelegramBot:
                     try:
                         sent_message = await update.effective_message.reply_text(
                             message_thread_id=_thread_id(update),
-                            text=content if content else "...",
+                            text=display if display else "...",
                         )
                     except Exception:
                         pass
                     continue
 
-            cutoff = _stream_cutoff(update, content) + backoff
+            cutoff = _stream_cutoff(update, display) + backoff
 
             if i == 0:
                 try:
@@ -264,16 +309,16 @@ class AITelegramBot:
                     sent_message = await update.effective_message.reply_text(
                         message_thread_id=_thread_id(update),
                         reply_to_message_id=_reply_id(self.config, update),
-                        text=content,
+                        text=display,
                     )
                 except Exception:
                     continue
-            elif abs(len(content) - len(prev)) > cutoff or tokens != 'not_finished':
-                prev = content
+            elif abs(len(display) - len(prev)) > cutoff or tokens != 'not_finished':
+                prev = display
                 try:
                     use_md = tokens != 'not_finished'
                     await _edit_message(context, chat_id, str(sent_message.message_id),
-                                        text=content, markdown=use_md)
+                                        text=display, markdown=use_md)
                 except RetryAfter as e:
                     backoff += 5
                     await asyncio.sleep(e.retry_after)
@@ -327,9 +372,12 @@ class AITelegramBot:
         application.add_handler(CommandHandler(
             'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP))
         application.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, self.vision))
+        application.add_handler(MessageHandler(
+            filters.VOICE | filters.AUDIO | filters.Document.AUDIO, self.audio))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(MessageHandler(
-            filters.ATTACHMENT & ~filters.PHOTO & ~filters.Document.IMAGE, self.unsupported))
+            filters.ATTACHMENT & ~filters.PHOTO & ~filters.Document.IMAGE
+            & ~filters.VOICE & ~filters.AUDIO & ~filters.Document.AUDIO, self.unsupported))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP, constants.ChatType.PRIVATE
         ]))

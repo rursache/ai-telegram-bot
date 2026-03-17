@@ -59,6 +59,13 @@ class AIHelper(ABC):
         """Interpret an image. Yields (content, 'not_finished') or (content, token_str)."""
         ...
 
+    async def transcribe(self, filename: str) -> str | None:
+        """Transcribe audio to text. Returns None if unsupported by this provider."""
+        return None
+
+    def supports_transcription(self) -> bool:
+        return False
+
     def reset_chat_history(self, chat_id: int, content: str = ''):
         self.conversations[chat_id] = []
 
@@ -78,6 +85,14 @@ class OpenAIHelper(AIHelper):
     def __init__(self, config: dict):
         super().__init__(config)
         self.client = openai.AsyncOpenAI(api_key=config['api_key'])
+
+    def supports_transcription(self) -> bool:
+        return True
+
+    async def transcribe(self, filename: str) -> str | None:
+        with open(filename, "rb") as audio:
+            result = await self.client.audio.transcriptions.create(model="whisper-1", file=audio)
+            return result.text
 
     async def _stream_response(self, chat_id: int):
         messages = [{"role": "system", "content": self.system_prompt}] + self.conversations[chat_id]
