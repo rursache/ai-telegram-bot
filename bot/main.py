@@ -27,7 +27,7 @@ def main():
     ai_config = {
         'provider': provider,
         'api_key': os.environ['API_KEY'],
-        'model': os.environ.get('MODEL', 'gpt-5-mini-2025-08-07' if provider == 'openai' else 'claude-sonnet-4-6'),
+        'model': os.environ.get('MODEL', 'gpt-5.4-mini' if provider == 'openai' else 'claude-sonnet-4-6'),
         'max_tokens': int(os.environ.get('MAX_TOKENS', 16384)),
         'max_history_size': int(os.environ.get('MAX_HISTORY_SIZE', 15)),
         'max_conversation_age_minutes': int(os.environ.get('MAX_CONVERSATION_AGE_MINUTES', 180)),
