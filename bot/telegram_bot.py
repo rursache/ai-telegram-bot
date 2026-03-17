@@ -22,9 +22,14 @@ class AITelegramBot:
         self.last_message: dict[int, str] = {}
         self.inline_queries_cache: dict[str, str] = {}
 
+        self.billing_urls = {
+            'openai': 'https://platform.openai.com/settings/organization/billing/overview',
+            'anthropic': 'https://platform.claude.com/settings/billing',
+        }
         self.commands = [
             BotCommand(command='reset', description='Reset conversation'),
             BotCommand(command='resend', description='Resend last message'),
+            BotCommand(command='billing', description='Open billing dashboard'),
         ]
         self.group_commands = [
             BotCommand(command='chat', description='Chat in groups'),
@@ -45,6 +50,16 @@ class AITelegramBot:
         await update.effective_message.reply_text(
             message_thread_id=_thread_id(update),
             text="Conversation reset."
+        )
+
+    async def billing(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
+        if not await self._is_allowed(update):
+            return
+        provider = self.ai.config['provider']
+        url = self.billing_urls.get(provider, '')
+        await update.effective_message.reply_text(
+            message_thread_id=_thread_id(update),
+            text=url,
         )
 
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -368,6 +383,7 @@ class AITelegramBot:
             .build()
 
         application.add_handler(CommandHandler('reset', self.reset))
+        application.add_handler(CommandHandler('billing', self.billing))
         application.add_handler(CommandHandler('resend', self.resend))
         application.add_handler(CommandHandler(
             'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP))

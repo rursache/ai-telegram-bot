@@ -56,6 +56,7 @@ python bot/main.py
 
 - `/reset` - Reset conversation (optionally with a new system prompt)
 - `/resend` - Resend last message
+- `/billing` - Open billing dashboard for your provider
 - `/chat` - Chat in group conversations
 
 ## License
