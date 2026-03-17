@@ -16,6 +16,10 @@ class AIHelper(ABC):
         self.config = config
         self.conversations: dict[int, list] = {}
         self.last_updated: dict[int, datetime.datetime] = {}
+        self.system_prompt = (
+            f"{config['assistant_prompt']}\n\n"
+            f"[Provider: {config['provider']}, Model: {config['model']}]"
+        )
 
     async def get_chat_response(self, chat_id: int, query: str):
         """Stream a chat response. Yields (content, 'not_finished') or (content, token_str)."""
@@ -76,7 +80,7 @@ class OpenAIHelper(AIHelper):
         self.client = openai.AsyncOpenAI(api_key=config['api_key'])
 
     async def _stream_response(self, chat_id: int):
-        messages = [{"role": "system", "content": self.config['assistant_prompt']}] + self.conversations[chat_id]
+        messages = [{"role": "system", "content": self.system_prompt}] + self.conversations[chat_id]
         stream = await self.client.chat.completions.create(
             model=self.config['model'],
             messages=messages,
@@ -143,7 +147,7 @@ class AnthropicHelper(AIHelper):
             model=self.config['model'],
             messages=self.conversations[chat_id],
             max_tokens=self.config['max_tokens'],
-            system=self.config['assistant_prompt'],
+            system=self.system_prompt,
         ) as stream:
             answer = ''
             usage = 0

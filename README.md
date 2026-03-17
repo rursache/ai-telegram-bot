@@ -49,7 +49,6 @@ python bot/main.py
 
 ## Commands
 
-- `/help` - Show help
 - `/reset` - Reset conversation (optionally with a new system prompt)
 - `/resend` - Resend last message
 - `/chat` - Chat in group conversations

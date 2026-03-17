@@ -22,20 +22,15 @@ class AITelegramBot:
         self.inline_queries_cache: dict[str, str] = {}
 
         self.commands = [
-            BotCommand(command='help', description='Show help'),
             BotCommand(command='reset', description='Reset conversation'),
             BotCommand(command='resend', description='Resend last message'),
         ]
         self.group_commands = [
             BotCommand(command='chat', description='Chat in groups'),
         ] + self.commands
+        self.unsupported_message = "This file type is not supported. I can only process text messages and images."
 
     # -- Handlers --
-
-    async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
-        if not await self._is_allowed(update):
-            return
-        await update.message.reply_text("Send me a message and I'll respond!")
 
     async def reset(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
         if not await self._is_allowed(update):
@@ -141,6 +136,14 @@ class AITelegramBot:
                 reply_to_message_id=_reply_id(self.config, update),
                 text=f"Error: {e}",
             )
+
+    async def unsupported(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
+        if not await self._is_allowed(update):
+            return
+        await update.effective_message.reply_text(
+            message_thread_id=_thread_id(update),
+            text=self.unsupported_message,
+        )
 
     async def inline_query(self, update: Update, _: ContextTypes.DEFAULT_TYPE):
         query = update.inline_query.query
@@ -320,13 +323,13 @@ class AITelegramBot:
             .build()
 
         application.add_handler(CommandHandler('reset', self.reset))
-        application.add_handler(CommandHandler('help', self.help))
-        application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('resend', self.resend))
         application.add_handler(CommandHandler(
             'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP))
         application.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, self.vision))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
+        application.add_handler(MessageHandler(
+            filters.ATTACHMENT & ~filters.PHOTO & ~filters.Document.IMAGE, self.unsupported))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP, constants.ChatType.PRIVATE
         ]))
