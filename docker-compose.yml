@@ -1,6 +1,26 @@
+name: ai-telegram-bots
 services:
-  bot:
-    build: .
+  ai-telegram-bot:
+    container_name: ai-telegram-bot
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      - TZ=Europe/Bucharest
+      # Required
+      - PROVIDER=openai
+      - API_KEY=your_key_here
+      - TELEGRAM_BOT_TOKEN=your_token_here
+      # Optional - defaults shown
+      # - MODEL=gpt-5-mini-2025-08-07
+      # - ADMIN_USER_IDS=-
+      # - ALLOWED_TELEGRAM_USER_IDS=*
+      # - ASSISTANT_PROMPT=You are a helpful assistant.
+      # - MAX_TOKENS=16384
+      # - MAX_HISTORY_SIZE=15
+      # - MAX_CONVERSATION_AGE_MINUTES=180
+      # - ENABLE_QUOTING=true
+      # - ENABLE_VISION=true
+      # - IGNORE_GROUP_VISION=true
+      # - VISION_PROMPT=What is in this image?
+      # - GROUP_TRIGGER_KEYWORD=
+      # - STREAM=true
+    image: ghcr.io/rursache/ai-telegram-bot:latest
