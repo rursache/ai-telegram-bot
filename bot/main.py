@@ -16,7 +16,7 @@ def main():
     )
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
-    required_values = ['TELEGRAM_BOT_TOKEN']
+    required_values = ['TELEGRAM_BOT_TOKEN', 'API_KEY']
     missing_values = [v for v in required_values if os.environ.get(v) is None]
     if missing_values:
         logging.error(f'Missing environment variables: {", ".join(missing_values)}')
@@ -24,19 +24,11 @@ def main():
 
     provider = os.environ.get('PROVIDER', 'openai')
 
-    if provider == 'openai' and not os.environ.get('OPENAI_API_KEY'):
-        logging.error('OPENAI_API_KEY is required when PROVIDER=openai')
-        exit(1)
-    elif provider == 'anthropic' and not os.environ.get('ANTHROPIC_API_KEY'):
-        logging.error('ANTHROPIC_API_KEY is required when PROVIDER=anthropic')
-        exit(1)
-
     ai_config = {
         'provider': provider,
-        'openai_api_key': os.environ.get('OPENAI_API_KEY', ''),
-        'anthropic_api_key': os.environ.get('ANTHROPIC_API_KEY', ''),
+        'api_key': os.environ['API_KEY'],
         'model': os.environ.get('MODEL', 'gpt-5-mini-2025-08-07' if provider == 'openai' else 'claude-sonnet-4-6'),
-        'max_tokens': int(os.environ.get('MAX_TOKENS', 4096)),
+        'max_tokens': int(os.environ.get('MAX_TOKENS', 16384)),
         'max_history_size': int(os.environ.get('MAX_HISTORY_SIZE', 15)),
         'max_conversation_age_minutes': int(os.environ.get('MAX_CONVERSATION_AGE_MINUTES', 180)),
         'assistant_prompt': os.environ.get('ASSISTANT_PROMPT', 'You are a helpful assistant.'),

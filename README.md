@@ -33,14 +33,13 @@ python bot/main.py
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PROVIDER` | `openai` | AI provider: `openai` or `anthropic` |
-| `OPENAI_API_KEY` | - | OpenAI API key (required if provider is openai) |
-| `ANTHROPIC_API_KEY` | - | Anthropic API key (required if provider is anthropic) |
+| `API_KEY` | - | API key for your chosen provider |
 | `TELEGRAM_BOT_TOKEN` | - | Telegram bot token from [@BotFather](https://t.me/BotFather) |
 | `MODEL` | auto | Model name (defaults based on provider) |
 | `ADMIN_USER_IDS` | `-` | Comma-separated admin Telegram user IDs |
 | `ALLOWED_TELEGRAM_USER_IDS` | `*` | Comma-separated allowed user IDs, or `*` for all |
 | `ASSISTANT_PROMPT` | `You are a helpful assistant.` | System prompt |
-| `MAX_TOKENS` | `4096` | Max completion tokens |
+| `MAX_TOKENS` | `16384` | Max completion tokens |
 | `MAX_HISTORY_SIZE` | `15` | Max messages in conversation history |
 | `MAX_CONVERSATION_AGE_MINUTES` | `180` | Auto-reset conversation after inactivity |
 | `ENABLE_VISION` | `true` | Enable image interpretation |

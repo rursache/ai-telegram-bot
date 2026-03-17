@@ -73,7 +73,7 @@ class OpenAIHelper(AIHelper):
 
     def __init__(self, config: dict):
         super().__init__(config)
-        self.client = openai.AsyncOpenAI(api_key=config['openai_api_key'])
+        self.client = openai.AsyncOpenAI(api_key=config['api_key'])
 
     async def _stream_response(self, chat_id: int):
         messages = [{"role": "system", "content": self.config['assistant_prompt']}] + self.conversations[chat_id]
@@ -136,7 +136,7 @@ class AnthropicHelper(AIHelper):
 
     def __init__(self, config: dict):
         super().__init__(config)
-        self.client = anthropic.AsyncAnthropic(api_key=config['anthropic_api_key'])
+        self.client = anthropic.AsyncAnthropic(api_key=config['api_key'])
 
     async def _stream_response(self, chat_id: int):
         async with self.client.messages.stream(
