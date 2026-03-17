@@ -24,12 +24,7 @@ docker compose up -d
 
 The compose file uses the pre-built image from GHCR and supports all configuration via environment variables inline. See `docker-compose.yml` for a full example with all available options.
 
-Alternatively, you can use a `.env` file. Copy `.env.example` to `.env`, fill in your values, and replace the `environment` block in `docker-compose.yml` with:
-
-```yaml
-env_file:
-  - .env
-```
+You can also use a `.env` file instead of inline environment variables.
 
 ### Run directly
 
@@ -37,8 +32,6 @@ env_file:
 pip install -r requirements.txt
 python bot/main.py
 ```
-
-When running directly, the bot loads configuration from a `.env` file automatically.
 
 ## Configuration
 
